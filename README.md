@@ -15,11 +15,11 @@ How to use it
 - tzi.py
 - a .txt contains amls from tzi (no need to extract the mails)(selected with a arrow key)
 
-![file selection](/ams.png)
+![file selection](ams.png)
 
 Results 
 - Saves all the mails in plaintext
 - Classifies the amls by status
 - Saves ongoing aml to the root folder to be used again next time you check
 
-![checking](/amc.png)
+![checking](amc.png)
