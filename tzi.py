@@ -1,7 +1,6 @@
 import os
 import re
 import time
-import msvcrt
 import requests
 from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor
@@ -50,48 +49,60 @@ class TZI_Checker:
         with open(file_path, "a", encoding="utf-8") as f:
             f.write(data + "\n")
 
-    def get_txt_files(self):
-        return [f for f in os.listdir('.') if f.endswith('.txt')]
-
-    def select_file(self):
-        files = self.get_txt_files()
-        if not files:
-            print(f"{ColorRed}No .txt files found in the current directory.{ColorReset}")
-            return None
-        
-        current_idx = 0
+    def select_folder(self):
         while True:
             os.system('cls' if os.name == 'nt' else 'clear')
             print(f"{ColorCyan}{ColorBold}TZI AML CHECKER - BY Chuborn{ColorReset}\n")
-            print("Select a file to extract emails from (Use arrows, Enter to select):")
-            for i, f in enumerate(files):
-                if i == current_idx:
-                    print(f" {ColorGreen}> {f}{ColorReset}")
-                else:
-                    print(f"   {f}")
-            
-            key = msvcrt.getch()
-            if key == b'\r': # Enter
-                return files[current_idx]
-            elif key == b'\xe0': # Special key
-                key = msvcrt.getch()
-                if key == b'H': # Up
-                    current_idx = (current_idx - 1) % len(files)
-                elif key == b'P': # Down
-                    current_idx = (current_idx + 1) % len(files)
+            folder = input("Paste the folder path to scan (or press Enter for current folder): ").strip().strip('"')
+            if not folder:
+                folder = os.getcwd()
 
-    def extract_emails(self, filename):
+            folder = os.path.abspath(folder)
+            if os.path.isdir(folder):
+                return folder
+
+            print(f"{ColorRed}Folder not found: {folder}{ColorReset}")
+            time.sleep(2)
+
+    def find_results_folder(self, selected_folder):
+        direct_results = os.path.join(selected_folder, "results")
+        if os.path.isdir(direct_results):
+            return direct_results
+
+        for root, dirs, _ in os.walk(selected_folder):
+            for d in dirs:
+                if d.lower() == "results":
+                    return os.path.join(root, d)
+        return None
+
+    def get_hanging_hit_files(self, results_folder):
+        matched_files = []
+        for root, _, files in os.walk(results_folder):
+            for file_name in files:
+                if not file_name.lower().endswith(".txt"):
+                    continue
+                lowered = file_name.lower()
+                if "hanging" in lowered or "hit" in lowered:
+                    matched_files.append(os.path.join(root, file_name))
+        return matched_files
+
+    def extract_emails_from_files(self, file_paths):
         # Regex: find email:password where email is @mcbotmfa.club or @mcckmfa.club
-        pattern = r'([a-zA-Z0-9._%+-]+@(mcbotmfa\.club|mcckmfa\.club)):([^\s|]+)'
+        pattern = r'([a-zA-Z0-9._%+-]+@(mcbotmfa\.club|mcckmfa\.club|tzick\.club)):([^\s|]+)'
         self.found_accounts = []
-        with open(filename, 'r', encoding='utf-8', errors='ignore') as f:
-            for line in f:
-                line = line.strip()
-                if not line: continue
-                match = re.search(pattern, line)
-                if match:
-                    # (FullLine, Email, Password)
-                    self.found_accounts.append((line, match.group(1), match.group(3)))
+        seen = set()
+        for file_path in file_paths:
+            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    match = re.search(pattern, line)
+                    if match:
+                        record = (line, match.group(1), match.group(3))
+                        if record not in seen:
+                            self.found_accounts.append(record)
+                            seen.add(record)
         return len(self.found_accounts)
 
     def check_account(self, full_line, email, password):
@@ -232,14 +243,24 @@ class TZI_Checker:
 
     def run(self):
         os.system('cls' if os.name == 'nt' else 'clear')
-        selected_file = self.select_file()
-        if not selected_file:
+        selected_folder = self.select_folder()
+        results_folder = self.find_results_folder(selected_folder)
+        if not results_folder:
+            print(f"{ColorRed}No 'results' folder found under: {selected_folder}{ColorReset}")
             return
 
-        count = self.extract_emails(selected_file)
+        matched_files = self.get_hanging_hit_files(results_folder)
+        if not matched_files:
+            print(f"{ColorRed}No .txt files with 'hanging' or 'hit' in the filename were found.{ColorReset}")
+            return
+
+        count = self.extract_emails_from_files(matched_files)
         os.system('cls' if os.name == 'nt' else 'clear')
         print(f"{ColorCyan}{ColorBold}TZI AML CHECKER - BY Chuborn{ColorReset}\n")
-        print(f"found {count} aml in {selected_file}\n")
+        print(f"selected folder: {selected_folder}")
+        print(f"results folder: {results_folder}")
+        print(f"matched text files: {len(matched_files)}")
+        print(f"found {count} aml in matched files\n")
         
         if count == 0:
             return
