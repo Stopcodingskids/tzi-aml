@@ -6,10 +6,10 @@ TZI-AML Checker
 
 Features
 - Checks for
-> Ready to secure AMLs
-> Canceled AMLs
-> Ongoing AMLs
-> MS canceled AMLs
+-> Ready to secure AMLs
+-> Canceled AMLs
+-> Ongoing AMLs
+-> MS canceled AMLs
 
 How to use it
 - tzi.py
