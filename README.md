@@ -22,3 +22,9 @@ Results
 - Saves ongoing aml to the root folder to be used again next time you check
 
 ![checking](amlc.png)
+
+
+TBD
+- Improve MS canceled AMLs detection
+- Add proxy support
+- Add config files with custom domain (zzchecker, etc)
